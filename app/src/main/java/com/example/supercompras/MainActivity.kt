@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -75,35 +77,37 @@ fun ShoppingList(modifier: Modifier = Modifier) {
     var items by rememberSaveable { mutableStateOf(listOf<Item>()) }
     var editedItem: Item? by rememberSaveable { mutableStateOf(null) }
 
-    Column(
+    LazyColumn(
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
     ) {
-        TopImage()
+        item {
+            TopImage()
 
-        AddItem(
-            editedItem = editedItem,
-            saveItem = { newItem ->
-                items = items + newItem
-            },
-            editItem = { newItem ->
-                items = items.map { mapItem ->
-                    if (mapItem == editedItem) {
-                        mapItem.copy(text = newItem.text)
-                    } else {
-                        mapItem
+            AddItem(
+                editedItem = editedItem,
+                saveItem = { newItem ->
+                    items = items + newItem
+                },
+                editItem = { newItem ->
+                    items = items.map { mapItem ->
+                        if (mapItem == editedItem) {
+                            mapItem.copy(text = newItem.text)
+                        } else {
+                            mapItem
+                        }
                     }
+                    editedItem = null
                 }
-                editedItem = null
-            }
-        )
+            )
 
-        Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(48.dp))
 
-        Title("Lista de Compras")
+            Title("Lista de Compras")
+        }
 
-        ItemsList(
+        itemsList(
             items = items.filter { !it.isBought },
             changeItemStatus = { selectedItem ->
                 items = changeItemStatus(selectedItem, items)
@@ -116,9 +120,11 @@ fun ShoppingList(modifier: Modifier = Modifier) {
             },
         )
 
-        Title("Comprados")
+        item {
+            Title("Comprados")
+        }
 
-        ItemsList(
+        itemsList(
             items = items.filter { it.isBought },
             changeItemStatus = { selectedItem ->
                 items = changeItemStatus(selectedItem, items)
@@ -204,23 +210,19 @@ fun Title(text: String, modifier: Modifier = Modifier) {
     )
 }
 
-@Composable
-fun ItemsList(
-    modifier: Modifier = Modifier,
+fun LazyListScope.itemsList(
     items: List<Item>,
     changeItemStatus: (item: Item) -> Unit = {},
     editItem: (item: Item) -> Unit = {},
     removeItem: (item: Item) -> Unit = {},
 ) {
-    Column(modifier = modifier) {
-        items.forEach { item ->
-            ListItem(
-                item = item,
-                changeItemStatus = changeItemStatus,
-                removeItem = removeItem,
-                editItem = editItem
-            )
-        }
+    items(items.size) { index ->
+        ListItem(
+            item = items[index],
+            changeItemStatus = changeItemStatus,
+            removeItem = removeItem,
+            editItem = editItem
+        )
     }
 }
 
