@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -30,6 +31,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -52,13 +54,15 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
+    val viewModel: SuperComprasViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             SuperComprasTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    ShoppingList(modifier = Modifier.padding(innerPadding))
+                    ShoppingList(modifier = Modifier.padding(innerPadding), viewModel = viewModel)
                 }
             }
         }
@@ -73,8 +77,8 @@ data class Item(
 )
 
 @Composable
-fun ShoppingList(modifier: Modifier = Modifier) {
-    var items by rememberSaveable { mutableStateOf(listOf<Item>()) }
+fun ShoppingList(viewModel: SuperComprasViewModel, modifier: Modifier = Modifier) {
+    val items by viewModel.items.collectAsState()
     var editedItem: Item? by rememberSaveable { mutableStateOf(null) }
 
     LazyColumn(
@@ -88,16 +92,10 @@ fun ShoppingList(modifier: Modifier = Modifier) {
             AddItem(
                 editedItem = editedItem,
                 saveItem = { newItem ->
-                    items = items + newItem
+                    viewModel.saveItem(newItem)
                 },
                 editItem = { newItem ->
-                    items = items.map { mapItem ->
-                        if (mapItem == editedItem) {
-                            mapItem.copy(text = newItem.text)
-                        } else {
-                            mapItem
-                        }
-                    }
+                    viewModel.editItem(editedItem, newItem)
                     editedItem = null
                 }
             )
@@ -110,10 +108,10 @@ fun ShoppingList(modifier: Modifier = Modifier) {
         itemsList(
             items = items.filter { !it.isBought },
             changeItemStatus = { selectedItem ->
-                items = changeItemStatus(selectedItem, items)
+                viewModel.changeItemStatus(selectedItem)
             },
             removeItem = { removedItem ->
-                items = removeItem(removedItem, items)
+                viewModel.removeItem(removedItem)
             },
             editItem = {
                 editedItem = it
@@ -127,10 +125,10 @@ fun ShoppingList(modifier: Modifier = Modifier) {
         itemsList(
             items = items.filter { it.isBought },
             changeItemStatus = { selectedItem ->
-                items = changeItemStatus(selectedItem, items)
+                viewModel.changeItemStatus(selectedItem)
             },
             removeItem = { removedItem ->
-                items = removeItem(removedItem, items)
+                viewModel.removeItem(removedItem)
             },
             editItem = {
                 editedItem = it
@@ -224,30 +222,6 @@ fun LazyListScope.itemsList(
             editItem = editItem
         )
     }
-}
-
-fun changeItemStatus(selectedItem: Item, items: List<Item>): List<Item> {
-    return items.map { mapItem ->
-        if (mapItem == selectedItem) {
-            if (selectedItem.isBought) {
-                mapItem.copy(
-                    isBought = false,
-                    purchaseDate = null
-                )
-            } else {
-                mapItem.copy(
-                    isBought = true,
-                    purchaseDate = LocalDateTime.now()
-                )
-            }
-        } else {
-            mapItem
-        }
-    }
-}
-
-fun removeItem(selectedItem: Item, items: List<Item>): List<Item> {
-    return items.filter { it != selectedItem }
 }
 
 @Composable
