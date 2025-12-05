@@ -5,9 +5,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -38,7 +40,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
@@ -84,7 +88,7 @@ fun ShoppingList(viewModel: SuperComprasViewModel, modifier: Modifier = Modifier
     LazyColumn(
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier
+        modifier = modifier.padding(horizontal = 16.dp)
     ) {
         item {
             TopImage()
@@ -103,37 +107,61 @@ fun ShoppingList(viewModel: SuperComprasViewModel, modifier: Modifier = Modifier
             Spacer(modifier = Modifier.height(48.dp))
 
             Title("Lista de Compras")
+
+            Spacer(modifier = Modifier.height(24.dp))
         }
 
-        itemsList(
-            items = items.filter { !it.isBought },
-            changeItemStatus = { selectedItem ->
-                viewModel.changeItemStatus(selectedItem)
-            },
-            removeItem = { removedItem ->
-                viewModel.removeItem(removedItem)
-            },
-            editItem = {
-                editedItem = it
-            },
-        )
+        if (items.none { !it.isBought }) {
+            item {
+                Text(
+                    text = "Sua lista está vazia. Adicione itens a ela para não esquecer nada na próxima compra!",
+                    style = Typography.bodyLarge,
+                )
+            }
+        } else {
+            itemsList(
+                items = items.filter { !it.isBought },
+                changeItemStatus = { selectedItem ->
+                    viewModel.changeItemStatus(selectedItem)
+                },
+                removeItem = { removedItem ->
+                    viewModel.removeItem(removedItem)
+                },
+                editItem = {
+                    editedItem = it
+                },
+            )
+        }
 
         item {
+            Spacer(modifier = Modifier.height(40.dp))
+
             Title("Comprados")
+
+            Spacer(modifier = Modifier.height(24.dp))
         }
 
-        itemsList(
-            items = items.filter { it.isBought },
-            changeItemStatus = { selectedItem ->
-                viewModel.changeItemStatus(selectedItem)
-            },
-            removeItem = { removedItem ->
-                viewModel.removeItem(removedItem)
-            },
-            editItem = {
-                editedItem = it
-            },
-        )
+        if (items.none { it.isBought }) {
+            item {
+                Text(
+                    text = "Os itens comprados aparecerão aqui.",
+                    style = Typography.bodyLarge,
+                )
+            }
+        } else {
+            itemsList(
+                items = items.filter { it.isBought },
+                changeItemStatus = { selectedItem ->
+                    viewModel.changeItemStatus(selectedItem)
+                },
+                removeItem = { removedItem ->
+                    viewModel.removeItem(removedItem)
+                },
+                editItem = {
+                    editedItem = it
+                },
+            )
+        }
     }
 }
 
@@ -160,7 +188,7 @@ fun AddItem(
         onValueChange = { text = it },
         placeholder = {
             Text(
-                "Digite o item que deseja adicionar",
+                "Digite o nome do item",
                 color = Color.Gray,
                 style = Typography.bodyMedium
             )
@@ -182,6 +210,7 @@ fun AddItem(
             text = ""
         },
         modifier = modifier,
+        contentPadding = PaddingValues(16.dp, 12.dp),
         colors = ButtonColors(
             containerColor = coral,
             contentColor = Color.White,
@@ -193,7 +222,6 @@ fun AddItem(
             text = "Salvar item",
             color = Color.White,
             style = Typography.bodyLarge,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
         )
     }
 }
@@ -204,8 +232,23 @@ fun Title(text: String, modifier: Modifier = Modifier) {
         text = text,
         style = Typography.headlineLarge,
         textAlign = TextAlign.Start,
-        modifier = modifier
+        modifier = modifier.fillMaxWidth(),
     )
+    DottedLine(modifier = modifier.padding(top = 8.dp))
+}
+
+@Composable
+fun DottedLine(modifier: Modifier = Modifier) {
+    val pathEffect = PathEffect.dashPathEffect(floatArrayOf(5f, 5f), 2.5f)
+    Canvas(modifier = modifier.fillMaxWidth()) {
+        drawLine(
+            color = coral,
+            pathEffect = pathEffect,
+            start = Offset(0f, 0f),
+            end = Offset(size.width, 0f),
+            strokeWidth = 4f,
+        )
+    }
 }
 
 fun LazyListScope.itemsList(
@@ -221,6 +264,7 @@ fun LazyListScope.itemsList(
             removeItem = removeItem,
             editItem = editItem
         )
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
@@ -257,15 +301,16 @@ fun ListItem(
                 onClick = {
                     removeItem(item)
                 },
-                modifier = Modifier.padding(end = 8.dp)
+                modifier = Modifier
+                    .padding(end = 8.dp)
+                    .size(16.dp)
             ) {
                 Icon(
                     Icons.Default.Delete, modifier = Modifier
-                        .size(16.dp)
                 )
             }
-            IconButton(onClick = { editItem(item) }) {
-                Icon(Icons.Default.Edit, modifier = Modifier.size(16.dp))
+            IconButton(onClick = { editItem(item) }, modifier = Modifier.size(16.dp)) {
+                Icon(Icons.Default.Edit)
             }
         }
         Text(
